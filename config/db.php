@@ -20,10 +20,9 @@ if ($host_name === 'localhost') {
 
 
 
-    define('BASE_URL', 'http://localhost/saas-hub/');
+    // IMPORTANT: yahan folder name soos_project hai
 
-
-
+    define('BASE_URL', 'http://localhost/SAAS_PROJECT/');
     $db_host = "localhost";
 
     $db_user = "root";
