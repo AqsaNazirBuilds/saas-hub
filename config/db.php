@@ -23,9 +23,6 @@ if ($host_name === 'localhost') {
     // IMPORTANT: yahan folder name soos_project hai
 
     define('BASE_URL', 'http://localhost/SAAS_PROJECT/');
-
-
-
     $db_host = "localhost";
 
     $db_user = "root";
