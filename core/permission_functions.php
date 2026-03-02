@@ -279,48 +279,21 @@ function can_all($permission_keys, $user_id = null) {
  */
 function log_unauthorized_attempt($permission_key) {
     global $conn;
-    
+
     // Get current user info
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
     $tenant_id = isset($_SESSION['tenant_id']) ? $_SESSION['tenant_id'] : null;
-    
-    // Get user IP
+
+    // Get request details
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-    
-    // Get the requested URL
-    $requested_url = $_SERVER['REQUEST_URI'] ?? 'Unknown';
-    
-    // Get request method
-    $request_method = $_SERVER['REQUEST_METHOD'] ?? 'Unknown';
-    
-    // Insert log entry
-    $stmt = $conn->prepare("
-        INSERT INTO audit_logs (user_id, tenant_id, action, ip_address, details, created_at)
-        VALUES (?, ?, ?, ?, ?, NOW())
-    ");
-    
-    $action = "UNAUTHORIZED_ACCESS_ATTEMPT: {$permission_key}";
-    $details = json_encode([
-        'required_permission' => $permission_key,
-        'requested_url' => $requested_url,
-        'request_method' => $request_method,
-        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
-    ]);
-    
-    // Handle null values
-    $user_id = $user_id ?? null;
-    $tenant_id = $tenant_id ?? null;
-    
-    if ($user_id !== null && $tenant_id !== null) {
-        $stmt->bind_param("iisss", $user_id, $tenant_id, $action, $ip_address, $details);
-    } elseif ($user_id !== null) {
-        $null_tenant = null;
-        $stmt->bind_param("iisss", $user_id, $null_tenant, $action, $ip_address, $details);
-    } else {
-        $null_user = null;
-        $stmt->bind_param("iisss", $null_user, $tenant_id, $action, $ip_address, $details);
-    }
-    
+    $route = $_SERVER['REQUEST_URI'] ?? 'Unknown';
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'Unknown';
+
+    // Prepare insert statement matching audit_logs schema
+    $stmt = $conn->prepare(
+        "INSERT INTO audit_logs (user_id, tenant_id, permission, route, method, ip_address, attempted_at) VALUES (?, ?, ?, ?, ?, ?, NOW())"
+    );
+    $stmt->bind_param("iissss", $user_id, $tenant_id, $permission_key, $route, $method, $ip_address);
     $stmt->execute();
 }
 

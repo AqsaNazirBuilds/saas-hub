@@ -82,8 +82,8 @@ function create_role($role_name, $role_description = null, $tenant_id = null) {
     
     // Insert new role
     $stmt = $conn->prepare("
-        INSERT INTO roles (tenant_id, role_name, role_description, is_system_role)
-        VALUES (?, ?, ?, 0)
+        INSERT INTO roles (tenant_id, role_name, role_description)
+        VALUES (?, ?, ?)
     ");
     
     $stmt->bind_param("iss", $tenant_id, $role_name, $role_description);
@@ -126,7 +126,7 @@ function get_roles_by_tenant($tenant_id = null) {
                (SELECT COUNT(*) FROM user_roles WHERE role_id = r.id) as user_count
         FROM roles r
         WHERE r.tenant_id = ?
-        ORDER BY r.is_system_role DESC, r.role_name ASC
+        ORDER BY r.role_name ASC
     ");
     
     $stmt->bind_param("i", $tenant_id);
@@ -205,10 +205,10 @@ function update_role($role_id, $role_name, $role_description = null, $tenant_id 
         return ['success' => false, 'message' => 'Role not found or access denied.'];
     }
     
-    // Prevent editing system roles
-    if ($existing_role['is_system_role'] == 1) {
-        return ['success' => false, 'message' => 'Cannot edit system roles.'];
-    }
+    /* 
+     * Prevent editing system roles removed as schema doesn't support them anymore.
+     * Logic can be added later if needed based on specific IDs or flags.
+     */
     
     // Check if new name already exists for another role
     $check_stmt = $conn->prepare("
@@ -264,10 +264,9 @@ function delete_role($role_id, $tenant_id = null) {
         return ['success' => false, 'message' => 'Role not found or access denied.'];
     }
     
-    // Prevent deleting system roles
-    if ($existing_role['is_system_role'] == 1) {
-        return ['success' => false, 'message' => 'Cannot delete system roles.'];
-    }
+    /* 
+     * Prevent deleting system roles removed as schema doesn't support them anymore.
+     */
     
     // Check if role is assigned to any users
     if (is_role_assigned_to_users($role_id)) {
@@ -386,7 +385,7 @@ function get_role_permissions($role_id, $tenant_id = null) {
         FROM permissions p
         INNER JOIN role_permissions rp ON p.id = rp.permission_id
         WHERE rp.role_id = ?
-        ORDER BY p.category, p.permission_name
+        ORDER BY p.permission_key
     ");
     
     $stmt->bind_param("i", $role_id);
@@ -409,13 +408,13 @@ function get_role_permissions($role_id, $tenant_id = null) {
 function get_all_permissions() {
     global $conn;
     
-    $stmt = $conn->prepare("SELECT * FROM permissions ORDER BY category, permission_name");
+    $stmt = $conn->prepare("SELECT * FROM permissions ORDER BY permission_key");
     $stmt->execute();
     $result = $stmt->get_result();
     
     $permissions = [];
     while ($row = $result->fetch_assoc()) {
-        $permissions[$row['category']][] = $row;
+        $permissions[] = $row;
     }
     
     return $permissions;

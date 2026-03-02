@@ -167,8 +167,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['company_name'])) {
             <!-- Sidebar Links -->
             <a href="dashboard.php" class="active"> Home</a>
             <a href="../user/list_user.php">Manage Users</a>
-            <a href="../subscription/status.php">Subscription Status</a>
+            <a href="../subscription/status.php"> Billing & Subscription </a>
             <a href="../audit/audit_view.php">Audit Logs</a>
+            <a href="../subscription/reports.php">Reports</a>
             <a href="../../core/auth.php?logout=true" style="margin-top: auto;">Logout</a>
         </aside>
 
