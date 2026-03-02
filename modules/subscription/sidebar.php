@@ -1,6 +1,7 @@
 <?php
 // modules/subscription/sidebar.php
-include_once(__DIR__ . '/../../config/db.php'); 
+include_once(__DIR__ . '/../../config/db.php');
+
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,7 +10,8 @@ if (session_status() === PHP_SESSION_NONE) {
 $tid = $_SESSION['tenant_id'] ?? 1;
 
 // Database connection check ($db variable is used in your config)
-$conn_var = isset($db) ? $db : $conn; 
+$conn_var = isset($db) ? $db : $conn;
+
 
 // Check karein ke user login hai ya nahi
 if (isset($_SESSION['user_id'])) {
@@ -17,10 +19,11 @@ if (isset($_SESSION['user_id'])) {
     $query = "SELECT name, role FROM users WHERE id = '$user_id'";
     $result = mysqli_query($conn_var, $query);
     $user_data = mysqli_fetch_assoc($result);
-    
+
     $display_name = $user_data['name'] ?? "User";
     $display_role = $user_data['role'] ?? "Member";
-} else {
+}
+else {
     $display_name = "Guest User";
     $display_role = "No Role";
 }
@@ -62,9 +65,10 @@ $unread_count = $notif_res['unread_count'] ?? 0;
         <div class="notif-wrapper">
             <a href="<?php echo BASE_URL; ?>modules/audit/reports.php" class="bell-link" title="View Notifications">
                 <i class="fas fa-bell"></i>
-                <?php if($unread_count > 0): ?>
+                <?php if ($unread_count > 0): ?>
                     <span class="notif-badge"><?php echo $unread_count; ?></span>
-                <?php endif; ?>
+                <?php
+endif; ?>
             </a>
         </div>
     </div>

@@ -2,73 +2,39 @@
 session_start();
 require_once '../../config/db.php';
 
-// Ensure user is logged in
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['tenant_id'])) {
+// Session Check: Ensure $_SESSION['tenant_id'] exists
+if (!isset($_SESSION['tenant_id'])) {
     header("Location: ../../login.php");
     exit();
 }
 
 $tenant_id = $_SESSION['tenant_id'];
-$error = '';
 $success = '';
+$error = '';
 
-if (!isset($_GET['id'])) {
-    header("Location: list_user.php");
-    exit();
-}
-$edit_user_id = intval($_GET['id']);
-
-// Fetch user data securely (ensuring tenant_id matches)
-$stmt = $conn->prepare("SELECT id, name, email FROM users WHERE id = ? AND tenant_id = ? LIMIT 1");
-$stmt->bind_param("ii", $edit_user_id, $tenant_id);
+// Fetch Tenant details
+$stmt = $conn->prepare("SELECT * FROM tenants WHERE id = ?");
+$stmt->bind_param("i", $tenant_id);
 $stmt->execute();
-$result = $stmt->get_result();
+$tenant = $stmt->get_result()->fetch_assoc();
 
-if ($result->num_rows === 0) {
-    // User not found or isolated out
-    header("Location: list_user.php");
-    exit();
-}
-$user = $result->fetch_assoc();
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['company_name'])) {
+    $new_name = trim($_POST['company_name']);
 
-// Handle Form Submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $new_name = trim($_POST['name'] ?? '');
-    $new_email = trim($_POST['email'] ?? '');
-    $new_password = $_POST['password'] ?? '';
-
-    if (!empty($new_name) && !empty($new_email)) {
-        // Verify email uniqueness checking other users
-        $check = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
-        $check->bind_param("si", $new_email, $edit_user_id);
-        $check->execute();
-
-        if ($check->get_result()->num_rows > 0) {
-            $error = "This email is already registered to another user.";
+    if (!empty($new_name)) {
+        // Update query
+        $update = $conn->prepare("UPDATE tenants SET company_name = ? WHERE id = ?");
+        $update->bind_param("si", $new_name, $tenant_id);
+        if ($update->execute()) {
+            $success = "Company details updated successfully!";
+            $tenant['company_name'] = $new_name; // Refresh the UI value
         }
         else {
-            if (!empty($new_password)) {
-                $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
-                $update = $conn->prepare("UPDATE users SET name = ?, email = ?, password = ? WHERE id = ? AND tenant_id = ?");
-                $update->bind_param("sssii", $new_name, $new_email, $hashed_password, $edit_user_id, $tenant_id);
-            }
-            else {
-                $update = $conn->prepare("UPDATE users SET name = ?, email = ? WHERE id = ? AND tenant_id = ?");
-                $update->bind_param("ssii", $new_name, $new_email, $edit_user_id, $tenant_id);
-            }
-
-            if ($update->execute()) {
-                $success = "User details updated successfully!";
-                $user['name'] = $new_name; // Update local display
-                $user['email'] = $new_email;
-            }
-            else {
-                $error = "Failed to update details. Please try again.";
-            }
+            $error = "Failed to update details. Please try again.";
         }
     }
     else {
-        $error = "Name and Email cannot be empty.";
+        $error = "Company name cannot be empty.";
     }
 }
 ?>
@@ -77,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit User – SaaS Hub</title>
-    <!-- Use the exact same Anti-gravity CSS -->
+    <title>Tenant Settings – SaaS Hub</title>
+   
     <link rel="stylesheet" href="../../css/futuristic.css">
     <style>
         .dashboard-layout {
@@ -157,6 +123,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px var(--primary-glow);
         }
+        .form-control:disabled {
+            background: rgba(0, 0, 0, 0.2);
+            color: #64748b;
+            cursor: not-allowed;
+        }
         .alert {
             padding: 1rem;
             border-radius: 8px;
@@ -194,8 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="logo-text">SaaS Hub</span>
             </div>
             <!-- Sidebar Links -->
-            <a href="../tenant/dashboard.php">Home</a>
-            <a href="list_user.php" class="active">Manage Users</a>
+            <a href="dashboard.php" class="active"> Home</a>
+            <a href="../user/list_user.php">Manage Users</a>
             <a href="../subscription/status.php">Subscription Status</a>
             <a href="../audit/audit_view.php">Audit Logs</a>
             <a href="../../core/auth.php?logout=true" style="margin-top: auto;">Logout</a>
@@ -204,9 +175,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
-                <a href="list_user.php" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 1rem; display: inline-block;">&larr; Back to Users</a>
-                <h1 class="hero-title" style="font-size: 2.2rem; margin-bottom: 0.5rem;">Edit User Details</h1>
-                <p class="hero-subtitle" style="font-size: 1rem; margin-bottom: 0;">Update member profiles securely inside your tenant workspace.</p>
+                <span class="badge" style="position: static; transform: none; display: inline-block; margin-bottom: 1rem;">Tenant Profile</span>
+                <h1 class="hero-title" style="font-size: 2.2rem; margin-bottom: 0.5rem;">Manage company identity.</h1>
+                <p class="hero-subtitle" style="font-size: 1rem; margin-bottom: 0;">Update your company shell safely while retaining data isolation.</p>
             </div>
 
             <?php if ($success): ?>
@@ -222,39 +193,31 @@ endif; ?>
             <div class="glass-card">
                 <form method="POST">
                     <div class="form-group">
-                        <label>Full Name</label>
+                        <label>Company name</label>
                         <input 
                             type="text" 
-                            name="name" 
+                            name="company_name" 
                             class="form-control"
-                            value="<?php echo htmlspecialchars($user['name']); ?>" 
+                            value="<?php echo htmlspecialchars($tenant['company_name'] ?? ''); ?>" 
+                            placeholder="Your Company Ltd"
                             required>
                     </div>
 
                     <div class="form-group">
-                        <label>Email Address</label>
+                        <label>Domain slug (read-only)</label>
                         <input 
-                            type="email" 
-                            name="email" 
+                            type="text" 
                             class="form-control"
-                            value="<?php echo htmlspecialchars($user['email']); ?>" 
-                            required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Reset Password</label>
-                        <input 
-                            type="password" 
-                            name="password" 
-                            class="form-control"
-                            placeholder="Leave blank to keep current password"
-                            minlength="6">
+                            value="<?php echo htmlspecialchars($tenant['domain_slug'] ?? ''); ?>" 
+                            disabled>
+                        <small style="color: var(--text-muted); display: block; margin-top: 5px; font-size: 0.8rem;">
+                            Domain slugs act as unique routing parameters and cannot be modified.
+                        </small>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
                         Save Changes
                     </button>
-                    <a href="list_user.php" class="btn btn-ghost" style="width: 100%; margin-top: 10px; text-align: center; display: block; box-sizing: border-box;">Cancel</a>
                 </form>
             </div>
         </main>

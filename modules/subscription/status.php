@@ -1,8 +1,10 @@
 <?php
 // modules/subscription/status.php
-require_once(__DIR__ . '/../../config/db.php'); 
+require_once(__DIR__ . '/../../config/db.php');
+
 require_once(__DIR__ . '/subscription.php');
-require_once(__DIR__ . '/plan_logic.php'); 
+require_once(__DIR__ . '/plan_logic.php');
+
 
 $sub_logic = new Subscription($db);
 $plan_logic = new PlanLogic($db);
@@ -10,7 +12,13 @@ $plan_logic = new PlanLogic($db);
 $tenant_id = $_SESSION['tenant_id'] ?? 1;
 
 // 1. Check if blocked
-$is_blocked = $plan_logic->is_subscription_blocked($tenant_id); 
+$is_blocked = $plan_logic->is_subscription_blocked($tenant_id);
+
+
+// Super Admin Bypass
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin') {
+    $is_blocked = false;
+}
 
 if ($is_blocked) {
     // Blocked screen with dynamic BASE_URL
@@ -31,12 +39,16 @@ if ($is_blocked) {
 
 $my_sub = $sub_logic->get_active_subscription($tenant_id);
 $is_active = $sub_logic->is_valid($my_sub);
-$usage = $plan_logic->get_user_usage($tenant_id); 
+$usage = $plan_logic->get_user_usage($tenant_id);
+
 
 $current_plan_name = "N/A";
-if($usage['plan_id'] == 1) $current_plan_name = "Free Trial";
-elseif($usage['plan_id'] == 2) $current_plan_name = "Basic Plan";
-elseif($usage['plan_id'] == 3) $current_plan_name = "Premium Plan";
+if ($usage['plan_id'] == 1)
+    $current_plan_name = "Free Trial";
+elseif ($usage['plan_id'] == 2)
+    $current_plan_name = "Basic Plan";
+elseif ($usage['plan_id'] == 3)
+    $current_plan_name = "Premium Plan";
 ?>
 
 <!DOCTYPE html>
@@ -99,15 +111,17 @@ elseif($usage['plan_id'] == 3) $current_plan_name = "Premium Plan";
             </div>
 
             <div class="action-area" style="margin-top: 30px; text-align: center;">
-                <?php if($usage['plan_id'] != 3): ?>
+                <?php if ($usage['plan_id'] != 3): ?>
                     <a href="<?php echo BASE_URL; ?>modules/subscription/checkout.php" class="btn-manage" style="display: block; width: 100%; padding: 14px; background: #1f3b57; color: white; border: none; border-radius: 8px; font-weight: 700; text-decoration: none; box-sizing: border-box; transition: 0.3s; cursor: pointer;">
                         <i class="fas fa-arrow-up"></i> Upgrade to Premium Plan
                     </a>
-                <?php else: ?>
+                <?php
+else: ?>
                     <div style="padding: 14px; background: #22c55e; color: white; border-radius: 8px; font-weight: 700;">
                         <i class="fas fa-check-double"></i> You are on Premium Plan
                     </div>
-                <?php endif; ?>
+                <?php
+endif; ?>
                 
                 <div style="margin-top: 15px;">
                     <a href="<?php echo BASE_URL; ?>modules/subscription/reports.php" style="color: #64748b; text-decoration: none; font-size: 14px; font-weight: 600;">

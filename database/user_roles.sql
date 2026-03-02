@@ -29,17 +29,19 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `user_roles` (
   `user_id` int(11) NOT NULL,
-  `role_id` int(11) NOT NULL
+  `role_id` int(11) NOT NULL,
+  `assigned_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `assigned_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user_roles`
 --
 
-INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES
-(1, 1),
-(2, 2),
-(3, 3);
+INSERT INTO `user_roles` (`user_id`, `role_id`, `assigned_by`) VALUES
+(1, 1, NULL),   -- Aqsa Admin -> Admin role
+(2, 2, 1),      -- Masoom Manager -> Manager role (assigned by Admin)
+(3, 3, 1);      -- Laiba Staff -> Staff role (assigned by Admin)
 
 --
 -- Indexes for dumped tables
@@ -49,8 +51,9 @@ INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES
 -- Indexes for table `user_roles`
 --
 ALTER TABLE `user_roles`
-  ADD PRIMARY KEY (`user_id`,`role_id`),
-  ADD KEY `fk_ur_role` (`role_id`);
+  ADD PRIMARY KEY (`user_id`, `role_id`),
+  ADD KEY `fk_ur_role` (`role_id`),
+  ADD KEY `fk_ur_assigned_by` (`assigned_by`);
 
 --
 -- Constraints for dumped tables
@@ -66,4 +69,4 @@ COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40101 SET CHARACTER_SET_COLLATION=@OLD_COLLATION_CONNECTION */;

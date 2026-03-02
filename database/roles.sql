@@ -31,17 +31,20 @@ CREATE TABLE `roles` (
   `id` int(11) NOT NULL,
   `tenant_id` int(11) NOT NULL,
   `role_name` varchar(50) NOT NULL,
-  `is_system_role` tinyint(1) DEFAULT 0
+  `role_description` varchar(255) DEFAULT NULL,
+  `is_system_role` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `roles`
 --
 
-INSERT INTO `roles` (`id`, `tenant_id`, `role_name`, `is_system_role`) VALUES
-(1, 1, 'Admin', 1),
-(2, 1, 'Manager', 0),
-(3, 1, 'Staff', 0);
+INSERT INTO `roles` (`id`, `tenant_id`, `role_name`, `role_description`, `is_system_role`) VALUES
+(1, 1, 'Admin', 'Full access to all features and settings', 1),
+(2, 1, 'Manager', 'Can manage users and view reports', 0),
+(3, 1, 'Staff', 'Basic access with limited permissions', 0);
 
 --
 -- Indexes for dumped tables
@@ -52,7 +55,8 @@ INSERT INTO `roles` (`id`, `tenant_id`, `role_name`, `is_system_role`) VALUES
 --
 ALTER TABLE `roles`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_role_tenant` (`tenant_id`);
+  ADD KEY `fk_role_tenant` (`tenant_id`),
+  ADD UNIQUE KEY `unique_tenant_role` (`tenant_id`, `role_name`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -77,4 +81,4 @@ COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40101 SET CHARACTER_SET_COLLATION=@OLD_CHARACTER_SET_CONNECTION */;

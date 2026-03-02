@@ -1,6 +1,13 @@
 <?php
+session_start();
 include('../../config/db.php');
-include('../../core/tenant_middleware.php');
+
+// Allow only logged-in users; if not a super admin, you should normally not hit this page directly
+if (empty($_SESSION['is_super_admin'])) {
+    // Optional: basic guard; adjust if you later want tenant-scoped access here
+    http_response_code(403);
+    die('Access denied: Super Admin only.');
+}
 
 // URL se company ki ID lein
 if (!isset($_GET['id'])) {
@@ -32,28 +39,52 @@ if (!$details) {
 <html lang="en">
 <head>
     <title>Tenant Details - <?php echo $details['company_name']; ?></title>
-    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/aqsa_styles/main.css">
 </head>
 <body>
-    <div class="container">
-        <h2>Tenant Details: <?php echo $details['company_name']; ?></h2>
-        <hr>
-        
-        <p><strong>Tenant ID:</strong> <?php echo $details['id']; ?></p>
-        <p><strong>Domain Slug:</strong> <?php echo $details['domain_slug']; ?></p>
-        <p><strong>Status:</strong> <?php echo strtoupper($details['status']); ?></p>
-        
-        <br>
-        <h3>Subscription Info</h3>
-        <p><strong>Current Plan:</strong> <?php echo $details['plan_name'] ?? 'No Plan Assigned'; ?></p>
-        <p><strong>Expiry Date:</strong> <?php echo $details['expiry_date'] ?? 'N/A'; ?></p>
-        
-        <br>
-        <h3>Usage Statistics</h3>
-        <p><strong>Total Users Registered:</strong> <?php echo $details['total_users']; ?></p>
+    <div class="aqsa-page">
+        <main class="aqsa-hero" style="padding-top:32px; padding-bottom:50px;">
+            <div class="aqsa-hero-inner" style="grid-template-columns:minmax(0,1.1fr); max-width:640px;">
+                <div class="aqsa-hero-panel" style="padding:20px;">
+                    <div class="aqsa-hero-kicker" style="margin-bottom:12px;">
+                        <span class="aqsa-kicker-pill">Tenant details</span>
+                        <span class="aqsa-kicker-text">
+                            <span class="aqsa-kicker-dot"></span>
+                            ID #<?php echo (int)$details['id']; ?>
+                        </span>
+                    </div>
+                    <h2 class="aqsa-hero-title" style="font-size:1.7rem; margin-top:0;">
+                        <?php echo htmlspecialchars($details['company_name']); ?>
+                    </h2>
+                    <p class="aqsa-hero-subtitle" style="max-width:none;">
+                        Domain slug <strong><?php echo htmlspecialchars($details['domain_slug']); ?></strong> ·
+                        Status <strong><?php echo strtoupper($details['status']); ?></strong>
+                    </p>
 
-        <br>
-        <a href="super_admin_list.php">← Back to List</a>
+                    <div style="margin-top:16px;">
+                        <h3 class="aqsa-section-title" style="font-size:1rem; margin-bottom:6px;">Subscription</h3>
+                        <p class="aqsa-hero-note">
+                            Plan: <strong><?php echo htmlspecialchars($details['plan_name'] ?? 'No Plan Assigned'); ?></strong><br>
+                            Expiry: <strong><?php echo htmlspecialchars($details['expiry_date'] ?? 'N/A'); ?></strong>
+                        </p>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <h3 class="aqsa-section-title" style="font-size:1rem; margin-bottom:6px;">Usage</h3>
+                        <p class="aqsa-hero-note">
+                            Total users registered: <strong><?php echo (int)$details['total_users']; ?></strong>
+                        </p>
+                    </div>
+
+                    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+                        <a href="super_admin_list.php" class="aqsa-btn aqsa-btn-outline">← Back to list</a>
+                        <a href="actions.php?action=subscription&id=<?php echo (int)$details['id']; ?>" class="aqsa-btn aqsa-btn-primary">
+                            Open subscription dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 </body>
 </html>

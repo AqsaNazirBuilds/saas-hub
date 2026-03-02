@@ -1,25 +1,29 @@
 <?php
 session_start();
-include('db.php'); // Database connection
+include_once(__DIR__ . '/../config/db.php'); // Database connection
 
 /**
  * Yeh function check karega ke user logged in hai aur uske paas valid tenant_id hai.
  */
 function protect_tenant_access() {
-    // 1. Check login status
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['tenant_id'])) {
-        header("Location: /login.php");
+    // 1. Must be logged in
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: " . BASE_URL . "login.php");
         exit();
     }
 
-    $session_tenant_id = $_SESSION['tenant_id'];
-
-    // 2. Agar Super Admin hai toh usay filters se bypass kar dein (Optional)
+    // 2. Super Admin: tenant_id optional / not required
     if (isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'] === true) {
-        return null; // Super Admin sab dekh sakta hai
+        return null; // Super Admin sab dekh sakta hai (no hard tenant scope)
     }
 
-    return $session_tenant_id;
+    // 3. Normal tenant users must have tenant_id
+    if (!isset($_SESSION['tenant_id'])) {
+        header("Location: " . BASE_URL . "login.php");
+        exit();
+    }
+
+    return $_SESSION['tenant_id'];
 }
 
 /**
@@ -27,6 +31,11 @@ function protect_tenant_access() {
  * Isay Masoom (Roles) aur Laiba (Logs/Subs) dono use karein gi.
  */
 function apply_tenant_scope($query, $is_first_condition = false) {
+    // Super Admin ke liye koi automatic tenant filter nahi lagana
+    if (isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'] === true) {
+        return $query;
+    }
+
     $tenant_id = $_SESSION['tenant_id'];
     
     // Agar query mein pehlay se WHERE clause hai toh AND lagayein
