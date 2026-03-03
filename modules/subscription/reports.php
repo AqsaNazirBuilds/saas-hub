@@ -182,22 +182,31 @@ include(__DIR__ . '/sidebar.php');
 
 <script>
     function dismissNotif(id) {
-        fetch('<?php echo BASE_URL; ?>modules/notifications/mark_read.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'id=' + id
-        })
-        .then(response => response.text())
-        .then(data => {
-            if(data.trim() === 'success') {
-                const element = document.getElementById('notif-' + id);
-                element.style.transition = "0.5s";
+    // Kyunke dono files ek hi folder mein hain, toh sirf file ka naam kaafi hai
+    fetch('mark_read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'id=' + id
+    })
+    .then(response => response.text())
+    .then(data => {
+        // Console mein check karne ke liye ke response kya aaya
+        console.log("Response from server:", data);
+        
+        if(data.trim() === 'success') {
+            const element = document.getElementById('notif-' + id);
+            if(element) {
+                element.style.transition = "0.5s ease";
                 element.style.opacity = "0";
+                element.style.transform = "translateX(20px)"; // Slide effect
                 setTimeout(() => element.remove(), 500);
             }
-        });
-    }
-
+        } else {
+            console.error("Error: Server responded with " + data);
+        }
+    })
+    .catch(err => console.error("Fetch error:", err));
+}
     function mapData(labels, counts) {
         const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         return months.map(m => {

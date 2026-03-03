@@ -66,12 +66,12 @@ $current_plan = $_SESSION['plan_name'] ?? 'Basic';
                 </div>
                 
                 <select name="module" class="filter-select">
-                    <option value="">All Modules</option>
-                    <option value="Subscription" <?php if($module == 'Subscription') echo 'selected'; ?>>Subscription</option>
-                    <option value="Users" <?php if($module == 'Users') echo 'selected'; ?>>Users</option>
-                    <option value="Auth" <?php if($module == 'Auth') echo 'selected'; ?>>Auth</option>
-                </select>
-                  
+    <option value="">All Modules</option>
+    <option value="Subscription" <?php if($module == 'Subscription') echo 'selected'; ?>>Subscription</option>
+    <option value="Users" <?php if($module == 'Users') echo 'selected'; ?>>Users</option>
+    <option value="Auth" <?php if($module == 'Auth') echo 'selected'; ?>>Auth</option>
+    <option value="Audit" <?php if($module == 'Audit') echo 'selected'; ?>>Audit</option>
+</select>  
                 <button type="submit" class="btn-filter">Filter</button>
                 
                 <?php if($current_plan === 'Premium'): ?>
