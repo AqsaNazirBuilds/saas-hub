@@ -32,7 +32,7 @@ $current_plan = $_SESSION['plan_name'] ?? 'Basic';
     <meta charset="UTF-8">
     <title>Audit Logs | Saas Project</title>
     
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>SaaS/css/laiba/audit_view.css?v=<?php echo time(); ?>">
+     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/laiba/audit_view.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
