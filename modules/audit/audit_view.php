@@ -46,7 +46,7 @@ $current_plan = $_SESSION['plan_name'] ?? 'Basic';
 </head>
 <body>
 
-<?php include(__DIR__ . '/../subscription/sidebar.php'); ?>
+
 
 <div class="main-wrapper"> 
     <div class="status-card">

@@ -31,7 +31,7 @@ if ($host_name === 'localhost') {
 
     $db_name = "saas";   // confirm your local database name
 
-    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name,3307);
+    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
 
 
 
@@ -57,7 +57,7 @@ if ($host_name === 'localhost') {
 
 
 
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name,3307);
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
 
 
 

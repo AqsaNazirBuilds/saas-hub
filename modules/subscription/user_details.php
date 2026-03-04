@@ -29,6 +29,7 @@ $logs = $stmt_log->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Activity Profile | Analytics</title>
+    <link rel="stylesheet" href="../../css/laiba/user_details.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/laiba/user_details.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -37,10 +38,6 @@ $logs = $stmt_log->get_result();
 </head>
 <body>
 
-<?php 
-// Including sidebar from subscription folder
-include(__DIR__ . '/../subscription/sidebar.php'); 
-?>
 
 <div class="main-wrapper">
 

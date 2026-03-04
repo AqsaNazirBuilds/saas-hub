@@ -48,7 +48,7 @@ $revenue = $plan_logic->get_total_revenue($tid);
 <body>
 <?php 
 // FIX: Path corrected to same folder
-include(__DIR__ . '/sidebar.php'); 
+
 ?>
 
 <div class="main-wrapper"> 
