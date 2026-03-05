@@ -23,6 +23,10 @@ include_once(__DIR__ . '/../../core/tenant_middleware.php');
 include_once(__DIR__ . '/../../core/permission_functions.php');
 include_once(__DIR__ . '/../../core/role_functions.php');
 
+// --- LAIBA: Audit Log Include ---
+require_once(__DIR__ . '/../audit/audit.php');
+$audit_obj = new AuditLog($db);
+
 // Check if user has permission to edit roles
 require_permission('role.edit');
 
@@ -80,6 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = update_role($role_id, $role_name, $role_description, $tenant_id);
         
         if ($result['success']) {
+
+        // --- LAIBA: Audit Log Entry YAHAN DALEN ---
+            $audit_msg = "Updated role: " . $role_name . " (ID: " . $role_id . ")";
+            $audit_obj->log($_SESSION['user_id'], $audit_msg, "Roles");
+            
             // Update permissions
             $perm_result = assign_permissions_to_role($role_id, $selected_permissions, $tenant_id);
             

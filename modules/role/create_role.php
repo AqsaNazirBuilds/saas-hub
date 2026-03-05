@@ -23,9 +23,12 @@ include_once(__DIR__ . '/../../core/tenant_middleware.php');
 include_once(__DIR__ . '/../../core/permission_functions.php');
 include_once(__DIR__ . '/../../core/role_functions.php');
 
+// --- LAIBA: Audit Log Include ---
+require_once(__DIR__ . '/../audit/audit.php');
+$audit_obj = new AuditLog($db);
+
 // Check if user has permission to create roles
 require_permission('role.create');
-
 $tenant_id = $_SESSION['tenant_id'];
 
 // Get all available permissions
@@ -61,6 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($result['success']) {
             $new_role_id = $result['role_id'];
+
+            // --- LAIBA: Audit Log Entry ---
+            $audit_msg = "Created new role: " . $role_name . " (ID: " . $new_role_id . ")";
+            $audit_obj->log($_SESSION['user_id'], $audit_msg, "Roles");
             
             // Assign selected permissions to the role
             if (!empty($selected_permissions)) {
