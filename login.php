@@ -70,7 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $userId;
                     $_SESSION['tenant_id'] = $tenant_id;
                     $_SESSION['role'] = $role_name;
-                    header("Location: modules/tenant/dashboard.php");
+                    
+                    if ($role_name === 'admin' || $role_name === 'tenant_admin' || $role_name === 'super_admin') {
+                        header("Location: modules/tenant/dashboard.php");
+                    } else {
+                        header("Location: modules/users/dashboard.php");
+                    }
                     exit();
                 }
                 else {
