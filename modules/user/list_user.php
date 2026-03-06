@@ -1,6 +1,10 @@
-<?php
+         <?php
 session_start();
 require_once '../../config/db.php';
+include_once(__DIR__ . '/../../core/permission_functions.php');
+
+// Check if user has permission to view users
+require_permission('user.view');
 
 // Ensure user is logged in
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['tenant_id'])) {
@@ -179,9 +183,18 @@ $users = $stmt_users->get_result();
             </div>
             <a href="../tenant/dashboard.php">Home</a>
             <a href="list_user.php" class="active">Manage Users</a>
+            <?php if (can('role.view')): ?>
+            <a href="../role/list_role.php">Role Management</a>
+            <?php endif; ?>
+            <?php if (can('subscription.view')): ?>
             <a href="../subscription/status.php">Subscription Status</a>
+            <?php endif; ?>
+            <?php if (can('audit.view')): ?>
             <a href="../audit/audit_view.php">Audit Logs</a>
+            <?php endif; ?>
+            <?php if (can('reports.basic')): ?>
             <a href="../subscription/reports.php">Reports</a>
+            <?php endif; ?>
             <a href="../../core/auth.php?logout=true" style="margin-top: auto;">Logout</a>
         </aside>
 
@@ -204,9 +217,11 @@ endif; ?>
                 <div class="dashboard-panel" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h2 style="font-size: 1.25rem; margin: 0;">Active Users</h2>
+                        <?php if (can('user.create')): ?>
                         <a href="add_user.php" class="btn btn-primary" style="padding: 0.6rem 1.2rem; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
                             <i class="fa-solid fa-plus"></i> Add New User
                         </a>
+                        <?php endif; ?>
                     </div>
                     <table class="user-table">
                         <thead>
@@ -240,7 +255,7 @@ else: ?>
                                 <tr>
                                     <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No users found in this tenant.</td>
                                 </tr>
-                            <?php
+                            <?php                   
 endif; ?>
                         </tbody>
                     </table>

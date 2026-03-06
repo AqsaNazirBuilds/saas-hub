@@ -2,6 +2,10 @@
 session_start();
 include('../../config/db.php');
 
+// --- LAIBA: Audit log include kiya ---
+require_once '../audit/audit.php';
+$audit_obj = new AuditLog($conn);
+
 // Only Super Admin should use this controller
 if (empty($_SESSION['is_super_admin'])) {
     http_response_code(403);
@@ -18,11 +22,19 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
         $stmt = $conn->prepare("UPDATE tenants SET status = 'suspended' WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+        
+        // --- LAIBA: Suspend ka log yahan add kiya ---
+        $audit_obj->logAction($_SESSION['user_id'], "Super Admin suspended Tenant ID: $id", "SuperAdmin_Action", 0);
+        
     } elseif ($action == 'delete') {
         // Tenant ko delete karna (Foreign keys ki wajah se users/subs bhi delete ho jayenge)
         $stmt = $conn->prepare("DELETE FROM tenants WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
+
+        // --- LAIBA: Delete ka log yahan add kiya ---
+        $audit_obj->logAction($_SESSION['user_id'], "Super Admin DELETED Tenant ID: $id", "SuperAdmin_Action", 0);
+
     } elseif ($action == 'subscription') {
         // Impersonate this tenant to view Laiba's subscription status dashboard
         $_SESSION['tenant_id'] = $id;

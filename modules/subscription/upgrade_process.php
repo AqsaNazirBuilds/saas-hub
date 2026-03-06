@@ -1,11 +1,16 @@
 <?php
 // modules/subscription/upgrade_process.php
+session_start(); // Session start lazmi hai
 require_once(__DIR__ . '/../../config/db.php');
 require_once(__DIR__ . '/plan_logic.php'); 
 
+// --- LAIBA: Audit log include kiya ---
+require_once(__DIR__ . '/../audit/audit.php');
+$audit_obj = new AuditLog($db); // Aapka connection variable yahan $db hai
+
 if (isset($_POST['payment_confirmed']) && $_POST['payment_confirmed'] == 'true') {
     
-    // Session se tenant_id lein (Best practice)
+    // Session se tenant_id lein
     $tenant_id = $_SESSION['tenant_id'] ?? 1; 
     $target_plan_id = $_POST['plan_id']; 
     $amount = $_POST['amount']; 
@@ -26,11 +31,14 @@ if (isset($_POST['payment_confirmed']) && $_POST['payment_confirmed'] == 'true')
 
         if ($db->query($upgrade_query)) {
             
+            // --- LAIBA: Plan Upgrade ka Audit Log yahan add kiya ---
+            $audit_obj->logAction($_SESSION['user_id'], "Upgraded to $plan_name Plan (Amount: $amount)", "Subscription", $tenant_id);
+
             // STEP 3: Notification Table mein entry
             $plan_logic = new PlanLogic($db);
             $plan_logic->add_payment_notification($tenant_id, $amount, $plan_name);
 
-            // SUCCESS: BASE_URL use karte hue reports page par bhejein
+            // SUCCESS
             header("Location: " . BASE_URL . "modules/subscription/reports.php?status=success"); 
             exit();
         } else {
@@ -40,7 +48,6 @@ if (isset($_POST['payment_confirmed']) && $_POST['payment_confirmed'] == 'true')
         die("Payment Record Failed. <a href='" . BASE_URL . "modules/subscription/checkout.php'>Try Again</a>");
     }
 } else {
-    // Agar koi direct access kare to wapis checkout par bhej dein
     header("Location: " . BASE_URL . "modules/subscription/checkout.php");
     exit();
 }

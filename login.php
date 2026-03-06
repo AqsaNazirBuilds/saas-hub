@@ -1,5 +1,8 @@
 <?php
 require_once 'config/db.php';
+// --- LAIBA: Audit log include kiya ---
+require_once 'modules/audit/audit.php'; 
+$audit_obj = new AuditLog($conn); // $conn aapki db.php se aa raha hai
 
 $error = '';
 
@@ -9,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!empty($email) && !empty($password)) {
         // Step 1: Select the user from the users table using ONLY the email address
-        $stmt = $conn->prepare("SELECT id, tenant_id, password FROM users WHERE email = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, tenant_id, name, password FROM users WHERE email = ? LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -22,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Step 3: Fetch the user's role
                 $userId = $user['id'];
+                $userName = $user['name'] ?? 'User'; // Name for the log
                 $role_name = 'user'; // default
 
                 $roleStmt = $conn->prepare("
@@ -39,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $role_name = strtolower(str_replace(' ', '_', $roleRow['role_name'] ?? ''));
                 }
                 else {
-                    // Debugging support
                     $error = "[Debug] Role not found for user ID: " . $userId;
                 }
 
@@ -49,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $tenant_id = $user['tenant_id'];
 
+                // --- LAIBA: Login Log Entry ---
+                // Ye line record karegi ke kisne login kiya
+               // Humne aakhir mein $tenant_id bhi bhej diya hai
+                $audit_obj->logAction($userId, "User $userName logged in successfully", "Auth", $tenant_id);
                 // Step 4: Logic / Redirection
                 if (is_null($tenant_id) && $role_name === 'super_admin') {
                     // Super Admin
@@ -67,17 +74,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit();
                 }
                 else {
-                    // Fallback
                     $error = "[Debug] Invalid configuration. Tenant ID: " . var_export($tenant_id, true) . ", Role: " . $role_name;
                 }
             }
             else {
-                // Step 5: Debugging
-                $error = "[Debug] Password mismatch."; // Usually "Invalid password" in prod, using debug as requested
+                $error = "[Debug] Password mismatch.";
             }
         }
         else {
-            // Step 5: Debugging
             $error = "[Debug] User not found with email: " . htmlspecialchars($email);
         }
     }
@@ -134,8 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="aqsa-alert aqsa-alert-error" style="margin-bottom:10px;">
                         <?php echo !empty($error) ? htmlspecialchars($error) : 'Invalid email or password. Please try again.'; ?>
                     </div>
-                <?php
-endif; ?>
+                <?php endif; ?>
 
                 <form action="login.php" method="POST" style="margin-top: 10px;">
                     <div class="aqsa-form-row">

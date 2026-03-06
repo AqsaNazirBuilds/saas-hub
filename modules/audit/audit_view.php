@@ -1,6 +1,5 @@
-<?php include(__DIR__ . '/../subscription/check_access.php'); ?>
-<?php
-// modules/audit/audit_view.php
+<?php 
+include(__DIR__ . '/../subscription/check_access.php'); 
 require_once(__DIR__ . '/../../config/db.php');
 require_once(__DIR__ . '/audit.php');
 
@@ -9,23 +8,33 @@ $audit_obj = new AuditLog($db);
 // Logic for Search and Filters
 $search = $_GET['search'] ?? '';
 $module = $_GET['module'] ?? '';
+$tenant_id = $_SESSION['tenant_id'];
+$is_super_admin = $_SESSION['is_super_admin'] ?? false;
 
-// Database columns check: action, module
+// Query building
 $query = "SELECT * FROM audit_logs WHERE 1=1";
-if ($search) {
-    $query .= " AND action LIKE '%$search%'";
-}
-if ($module) {
-    $query .= " AND module = '$module'";
-}
-$query .= " ORDER BY created_at DESC";
 
+// --- LAIBA: Security Fix ---
+if (!$is_super_admin) {
+    $query .= " AND tenant_id = $tenant_id";
+}
+
+if ($search) {
+    $search_safe = $db->real_escape_string($search);
+    $query .= " AND action LIKE '%$search_safe%'";
+}
+
+if ($module) {
+    $module_safe = $db->real_escape_string($module);
+    $query .= " AND module = '$module_safe'";
+}
+
+$query .= " ORDER BY created_at DESC";
 $logs = $db->query($query);
 
 // Plan check for Export Feature
 $current_plan = $_SESSION['plan_name'] ?? 'Basic'; 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,7 +46,7 @@ $current_plan = $_SESSION['plan_name'] ?? 'Basic';
 </head>
 <body>
 
-<?php include(__DIR__ . '/../subscription/sidebar.php'); ?>
+
 
 <div class="main-wrapper"> 
     <div class="status-card">
@@ -57,12 +66,12 @@ $current_plan = $_SESSION['plan_name'] ?? 'Basic';
                 </div>
                 
                 <select name="module" class="filter-select">
-                    <option value="">All Modules</option>
-                    <option value="Subscription" <?php if($module == 'Subscription') echo 'selected'; ?>>Subscription</option>
-                    <option value="Users" <?php if($module == 'Users') echo 'selected'; ?>>Users</option>
-                    <option value="Auth" <?php if($module == 'Auth') echo 'selected'; ?>>Auth</option>
-                </select>
-                  
+    <option value="">All Modules</option>
+    <option value="Subscription" <?php if($module == 'Subscription') echo 'selected'; ?>>Subscription</option>
+    <option value="Users" <?php if($module == 'Users') echo 'selected'; ?>>Users</option>
+    <option value="Auth" <?php if($module == 'Auth') echo 'selected'; ?>>Auth</option>
+    <option value="Audit" <?php if($module == 'Audit') echo 'selected'; ?>>Audit</option>
+</select>  
                 <button type="submit" class="btn-filter">Filter</button>
                 
                 <?php if($current_plan === 'Premium'): ?>

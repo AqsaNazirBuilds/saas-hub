@@ -652,15 +652,19 @@ function log_role_activity($action, $tenant_id, $details) {
         return; // Table doesn't exist yet
     }
     
-    $user_id = $_SESSION['user_id'] ?? null;
+    $user_id = $_SESSION['user_id'] ?? 0;
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+    $module = 'Role Management';
     
+    // Use correct column names matching audit_logs table schema
+    // Columns: tenant_id, user_id, action, module, ip_address, user_agent, created_at
     $stmt = $conn->prepare("
-        INSERT INTO audit_logs (user_id, tenant_id, action, ip_address, details, created_at)
-        VALUES (?, ?, ?, ?, ?, NOW())
+        INSERT INTO audit_logs (tenant_id, user_id, action, module, ip_address, user_agent, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
     ");
     
-    $stmt->bind_param("iisss", $user_id, $tenant_id, $action, $ip_address, $details);
+    $stmt->bind_param("iissss", $tenant_id, $user_id, $action, $module, $ip_address, $user_agent);
     $stmt->execute();
 }
 

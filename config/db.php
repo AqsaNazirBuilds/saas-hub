@@ -32,14 +32,8 @@ if ($host_name === 'localhost') {
     $db_name = "saas";   // confirm your local database name
 
     $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-
-
-
 /* ================= LIVE SERVER ================= */
-
 } else {
-
-
 
     define('BASE_URL', 'https://laiba-lms.great-site.net/SaaS/');
 
@@ -57,7 +51,7 @@ if ($host_name === 'localhost') {
 
 
 
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name,);
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
 
 
 

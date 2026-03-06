@@ -1,6 +1,14 @@
 <?php
 session_start();
 require_once '../../config/db.php';
+include_once(__DIR__ . '/../../core/permission_functions.php');
+
+// Check if user has permission to edit users
+require_permission('user.edit');
+
+// --- LAIBA: Audit log include kiya ---
+require_once '../audit/audit.php';
+$audit_obj = new AuditLog($conn);
 
 // Ensure user is logged in
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['tenant_id'])) {
@@ -58,6 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($update->execute()) {
+                // --- LAIBA: Edit User ka log yahan banega ---
+    $audit_obj->logAction($_SESSION['user_id'], "Updated details for user: $new_name (ID: $edit_user_id)", "Users", $tenant_id);
                 $success = "User details updated successfully!";
                 $user['name'] = $new_name; // Update local display
                 $user['email'] = $new_email;

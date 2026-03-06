@@ -1,6 +1,16 @@
 <?php
 // modules/subscription/checkout.php
+session_start(); // Session start zaroori hai audit log ke liye
 require_once(__DIR__ . '/../../config/db.php');
+
+// --- LAIBA: Audit log include kiya ---
+require_once(__DIR__ . '/../audit/audit.php');
+$audit_obj = new AuditLog($db);
+
+// Record karein ke user ne checkout page dekha
+if (isset($_SESSION['user_id'])) {
+    $audit_obj->logAction($_SESSION['user_id'], "Viewed Subscription Plans", "Subscription", $_SESSION['tenant_id'] ?? 0);
+}
 
 // Database se Basic (2) aur Premium (3) plans uthayein
 $plans_query = "SELECT * FROM plans WHERE id IN (2, 3)"; 

@@ -288,12 +288,19 @@ function log_unauthorized_attempt($permission_key) {
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $route = $_SERVER['REQUEST_URI'] ?? 'Unknown';
     $method = $_SERVER['REQUEST_METHOD'] ?? 'Unknown';
+    
+    // Prepare the action and module values
+    $action = "Unauthorized Access Attempt: " . $permission_key;
+    $module = "Permission: " . $permission_key;
 
     // Prepare insert statement matching audit_logs schema
+    // Columns: tenant_id, user_id, action, module, ip_address, user_agent, created_at
     $stmt = $conn->prepare(
-        "INSERT INTO audit_logs (user_id, tenant_id, permission, route, method, ip_address, attempted_at) VALUES (?, ?, ?, ?, ?, ?, NOW())"
+        "INSERT INTO audit_logs (tenant_id, user_id, action, module, ip_address, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())"
     );
-    $stmt->bind_param("iissss", $user_id, $tenant_id, $permission_key, $route, $method, $ip_address);
+    
+    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+    $stmt->bind_param("iissss", $tenant_id, $user_id, $action, $module, $ip_address, $user_agent);
     $stmt->execute();
 }
 

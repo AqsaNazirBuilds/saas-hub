@@ -1,5 +1,8 @@
 <?php
 include('../../config/db.php');
+// --- LAIBA: Audit log class include ki ---
+require_once('../audit/audit.php');
+$audit_obj = new AuditLog($conn);
 
 $error = '';
 $success = '';
@@ -58,18 +61,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             $tenant_id = $conn->insert_id;
 
-            // 2) Create first user as Company Admin (role system handled by Masoom later)
+            // 2) Create first user as Company Admin
             $stmt = $conn->prepare("INSERT INTO users (tenant_id, name, email, password, status) VALUES (?, ?, ?, ?, 'active')");
             $stmt->bind_param("isss", $tenant_id, $admin_name, $admin_email, $hashed_password);
             $stmt->execute();
+            $new_user_id = $conn->insert_id; // Added to log the user ID
 
-            // 3) Assign 7-day free trial subscription record (business logic handled by Laiba later)
+            // 3) Assign 7-day free trial subscription record
             $start_date  = date('Y-m-d');
             $expiry_date = date('Y-m-d', strtotime('+7 days'));
             $plan_id = 1;
             $stmt = $conn->prepare("INSERT INTO subscriptions (tenant_id, plan_id, start_date, expiry_date, status) VALUES (?, ?, ?, ?, 'active')");
             $stmt->bind_param("iiss", $tenant_id, $plan_id, $start_date, $expiry_date);
             $stmt->execute();
+
+            // --- LAIBA: Audit Log Entry (Yahan record add hoga) ---
+            $audit_obj->logAction($new_user_id, "New tenant '$company_name' registered with Admin $admin_name", "Auth");
 
             $conn->commit();
             $success = 'Tenant registered successfully. You can now log in to manage users.';
@@ -80,7 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

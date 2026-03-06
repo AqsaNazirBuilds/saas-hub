@@ -26,27 +26,26 @@ class PlanLogic {
     }
 
     // 1. Monthly Logins
+    // 1. Monthly Logins (FIXED: Filter removed to show all months data)
     public function get_monthly_logins($tenant_id, $filter = 'month') {
-        $date_cond = $this->get_date_condition($filter, 'created_at');
-        $sql = "SELECT MONTHNAME(created_at) as month, COUNT(*) as total 
-                FROM audit_logs 
-                WHERE tenant_id = ? AND action LIKE '%Login%' $date_cond
-                GROUP BY MONTH(created_at) 
-                ORDER BY created_at ASC LIMIT 5";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $tenant_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $months = []; $counts = [];
-        while ($row = $result->fetch_assoc()) {
-            $months[] = $row['month'];
-            $counts[] = $row['total'];
-        }
-        return ['labels' => $months, 'data' => $counts];
+    // Humne date condition hata di hai taake saara data nazar aaye
+    $sql = "SELECT MONTHNAME(created_at) as month, COUNT(*) as total 
+        FROM audit_logs 
+        WHERE tenant_id = ? AND (action LIKE '%Login%' OR action LIKE '%logged%')
+        GROUP BY MONTH(created_at) 
+        ORDER BY created_at ASC";
+    $stmt = $this->db->prepare($sql);
+    $stmt->bind_param("i", $tenant_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $months = []; $counts = [];
+    while ($row = $result->fetch_assoc()) {
+        $months[] = $row['month'];
+        $counts[] = $row['total'];
     }
-
+    return ['labels' => $months, 'data' => $counts];
+}
     // 2. User Registration
     public function get_monthly_registrations($tenant_id, $filter = 'month') {
         $date_cond = $this->get_date_condition($filter, 'created_at');
@@ -81,91 +80,92 @@ public function get_total_revenue($tenant_id) {
     // Agar koi payment nahi mili toh 0 return karega
     return $result['total'] ?? 0;
 }
-
-
-
-    // 3. Premium Sales
-    public function get_premium_sales($tenant_id, $filter = 'month') {
-        $date_cond = $this->get_date_condition($filter, 'start_date');
-        $sql = "SELECT MONTHNAME(start_date) as month, COUNT(*) as total 
-                FROM subscriptions 
-                WHERE tenant_id = ? AND plan_id = 3 $date_cond
-                GROUP BY MONTH(start_date) 
-                ORDER BY start_date ASC LIMIT 5";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $tenant_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $months = []; $counts = [];
-        while ($row = $result->fetch_assoc()) {
-            $months[] = $row['month'];
-            $counts[] = $row['total'];
-        }
-        return ['labels' => $months, 'data' => $counts];
+    // 3. Sales Graph (Fixed for Basic and Premium)
+public function get_premium_sales($tenant_id, $filter = 'month') {
+    // Pehle yahan plan_id = 3 tha, ab humne plan_id > 1 kar diya hai
+    // Taake Basic (2) aur Premium (3) dono graph mein show hon
+    $sql = "SELECT MONTHNAME(start_date) as month, COUNT(*) as total 
+            FROM subscriptions 
+            WHERE tenant_id = ? AND plan_id > 1
+            GROUP BY MONTH(start_date) 
+            ORDER BY start_date ASC";
+    
+    $stmt = $this->db->prepare($sql);
+    $stmt->bind_param("i", $tenant_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $months = []; $counts = [];
+    while ($row = $result->fetch_assoc()) {
+        $months[] = $row['month'];
+        $counts[] = $row['total'];
     }
-
+    return ['labels' => $months, 'data' => $counts];
+}
     // 4. Most Active Users
-    public function get_top_users($tenant_id, $filter = 'month') {
-        $date_cond = $this->get_date_condition($filter, 'a.created_at');
-        $sql = "SELECT u.id as user_id, u.name as username, COUNT(a.id) as activity_count 
-                FROM users u 
-                JOIN audit_logs a ON u.id = a.user_id 
-                WHERE a.tenant_id = ? AND a.action LIKE '%Login%' $date_cond
-                GROUP BY u.id 
-                ORDER BY activity_count DESC LIMIT 3";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $tenant_id);
-        $stmt->execute();
-        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    }
-
+    // 4. Most Active Users (FIXED: Catching 'logged' and 'Login' both)
+public function get_top_users($tenant_id, $filter = 'month') {
+    $date_cond = $this->get_date_condition($filter, 'a.created_at');
+    
+    // Yahan humne LIKE '%Login%' ki jagah OR ke saath '%logged%' bhi daal diya hai
+    $sql = "SELECT u.id as user_id, u.name as username, COUNT(a.id) as activity_count 
+            FROM users u 
+            JOIN audit_logs a ON u.id = a.user_id 
+            WHERE a.tenant_id = ? 
+            AND (a.action LIKE '%Login%' OR a.action LIKE '%logged%') 
+            $date_cond
+            GROUP BY u.id 
+            ORDER BY activity_count DESC LIMIT 3";
+    
+    $stmt = $this->db->prepare($sql);
+    $stmt->bind_param("i", $tenant_id);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
     // 5. User Usage Summary (FIXED: Dynamic Limit from Database)
     public function get_user_usage($tenant_id) {
-        // ERROR REMOVED: Ab hum direct join se plans table se limit utha rahe hain
-        $sql = "SELECT p.user_limit, p.plan_name, s.plan_id 
-                FROM subscriptions s 
-                JOIN plans p ON s.plan_id = p.id 
-                WHERE s.tenant_id = ? AND s.status = 'active' LIMIT 1";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $tenant_id);
-        $stmt->execute();
-        $plan_data = $stmt->get_result()->fetch_assoc();
-        
-        // Agar plan data na mile toh default (Trial) values set karein
-        $limit = $plan_data['user_limit'] ?? 5; 
-        $plan_name = $plan_data['plan_name'] ?? 'Free Trial';
-        $plan_id = $plan_data['plan_id'] ?? 1;
+    // 1. Plan aur Limit uthana
+    $sql = "SELECT p.user_limit, p.plan_name, s.plan_id 
+            FROM subscriptions s 
+            JOIN plans p ON s.plan_id = p.id 
+            WHERE s.tenant_id = ? AND s.status = 'active' LIMIT 1";
+    
+    $stmt = $this->db->prepare($sql);
+    $stmt->bind_param("i", $tenant_id);
+    $stmt->execute();
+    $plan_data = $stmt->get_result()->fetch_assoc();
+    
+    $limit = $plan_data['user_limit'] ?? 5; 
+    $plan_name = $plan_data['plan_name'] ?? 'Free Trial';
+    $plan_id = $plan_data['plan_id'] ?? 1;
 
-        // Current User Count
-        $sql_count = "SELECT COUNT(id) as total FROM users WHERE tenant_id = ?";
-        $stmt_count = $this->db->prepare($sql_count);
-        $stmt_count->bind_param("i", $tenant_id);
-        $stmt_count->execute();
-        $current_users = $stmt_count->get_result()->fetch_assoc()['total'];
+    // 2. Current User Count
+    $sql_count = "SELECT COUNT(id) as total FROM users WHERE tenant_id = ?";
+    $stmt_count = $this->db->prepare($sql_count);
+    $stmt_count->bind_param("i", $tenant_id);
+    $stmt_count->execute();
+    $current_users = $stmt_count->get_result()->fetch_assoc()['total'];
 
-        // Total Logins
-        $sql_logins = "SELECT COUNT(*) as total_logins FROM audit_logs WHERE tenant_id = ? AND action LIKE '%Login%'";
-        $stmt_l = $this->db->prepare($sql_logins);
-        $stmt_l->bind_param("i", $tenant_id);
-        $stmt_l->execute();
-        $total_logins = $stmt_l->get_result()->fetch_assoc()['total_logins'] ?? 0;
+    // 3. Total Logins (YAHAN BADLAAO KIYA HAI)
+    // Humne LIKE '%Login%' ke saath OR laga kar lowercase 'login' bhi shamil kar liya hai
+    $sql_logins = "SELECT COUNT(*) as total_logins FROM audit_logs 
+                   WHERE tenant_id = ? AND (action LIKE '%Login%' OR action LIKE '%logged%')";
+    $stmt_l = $this->db->prepare($sql_logins);
+    $stmt_l->bind_param("i", $tenant_id);
+    $stmt_l->execute();
+    $total_logins = $stmt_l->get_result()->fetch_assoc()['total_logins'] ?? 0;
 
-        $percentage = ($limit > 0) ? ($current_users / $limit) * 100 : 0;
+    $percentage = ($limit > 0) ? ($current_users / $limit) * 100 : 0;
 
-        return [
-            'limit' => $limit, // Ab ye Basic par 10 aur Premium par 999 sahi dega
-            'current' => $current_users,
-            'logins_total' => $total_logins, 
-            'plan_id' => $plan_id,
-            'plan_name' => $plan_name,
-            'percentage' => round($percentage, 1)
-        ];
-    }
-
+    return [
+        'limit' => $limit,
+        'current' => $current_users,
+        'logins_total' => $total_logins, 
+        'plan_id' => $plan_id,
+        'plan_name' => $plan_name,
+        'percentage' => round($percentage, 1)
+    ];
+}
     // 6. Subscription Billing & Expiry Details
     public function get_subscription_details($tenant_id)
     {

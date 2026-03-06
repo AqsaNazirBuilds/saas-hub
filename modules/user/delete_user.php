@@ -1,6 +1,14 @@
 <?php
 session_start();
 require_once '../../config/db.php';
+include_once(__DIR__ . '/../../core/permission_functions.php');
+
+// Check if user has permission to delete users
+require_permission('user.delete');
+
+// --- LAIBA: Audit log include kiya ---
+require_once '../audit/audit.php';
+$audit_obj = new AuditLog($conn);
 
 // Ensure user is logged in
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['tenant_id'])) {
@@ -25,7 +33,11 @@ if (isset($_GET['id'])) {
 
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
-            // Delete successful, UI User limits will automatically re-evaluate upon redirection because COUNT(id) runs on list_user.php load
+            
+            // --- LAIBA: Delete Hone Ka Log Yahan Banega ---
+            $audit_obj->logAction($_SESSION['user_id'], "Deleted user (ID: $user_id_to_delete)", "Users", $tenant_id);
+
+            // Delete successful, UI User limits will automatically re-evaluate upon redirection
             echo "<script>window.location.href = 'list_user.php';</script>";
         }
         else {
