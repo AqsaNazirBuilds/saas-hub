@@ -5,6 +5,10 @@ require_once 'config/db.php';
 // Fetch plans from database
 $plans_query = "SELECT * FROM plans";
 $plans_result = $conn->query($plans_query);
+
+// Fetch tenants for social proof
+$tenants_query = "SELECT company_name FROM tenants LIMIT 12";
+$tenants_result = $conn->query($tenants_query);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,7 +17,7 @@ $plans_result = $conn->query($plans_query);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SaaS Hub – The Future of Business Management</title>
     <!-- Dark, futuristic Dribbble theme -->
-    <link rel="stylesheet" href="css/futuristic.css">
+    <link rel="stylesheet" href="css/futuristic.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <div class="blob-bg blob-1"></div>
@@ -70,6 +74,30 @@ $plans_result = $conn->query($plans_query);
             </div>
         </section>
 
+        <!-- Social Proof Section -->
+        <section class="social-proof">
+            <div class="section-header">
+                <h2>Trusted By</h2>
+                <p>Innovative teams worldwide</p>
+            </div>
+            <div class="trusted-by-wrapper">
+                <?php
+                $companies = [];
+                if ($tenants_result && $tenants_result->num_rows > 0) {
+                    while ($row = $tenants_result->fetch_assoc()) {
+                        $companies[] = htmlspecialchars($row['company_name']);
+                    }
+                }
+                if (empty($companies)) {
+                    $companies = ['Macro Solutions', 'Orbit HR & Co', 'Nexus Tech', 'Pinnacle Systems'];
+                }
+                foreach ($companies as $company) {
+                    echo "<div class='company-logo'>{$company}</div>";
+                }
+                ?>
+            </div>
+        </section>
+
         <!-- Pricing Section -->
         <section id="pricing" class="pricing">
             <div class="section-header">
@@ -80,7 +108,7 @@ $plans_result = $conn->query($plans_query);
                 <?php
 if ($plans_result && $plans_result->num_rows > 0) {
     while ($plan = $plans_result->fetch_assoc()) {
-        $is_popular = strtolower($plan['plan_name']) === 'basic';
+        $is_popular = strtolower($plan['plan_name']) === 'premium';
         $price = floatval($plan['price']);
 
         // Handle features dynamically
@@ -127,12 +155,52 @@ else {
 
         <!-- Footer -->
         <footer>
-            <div class="footer-content">
-                <p>&copy; <?php echo date('Y'); ?> SaaS Hub &bull; Internship Project</p>
-                <div class="footer-links">
-                    <a href="#features">Features</a>
-                    <a href="#pricing">Pricing</a>
+            <div class="footer-container">
+                <div class="footer-content">
+                <div class="footer-col">
+                    <a href="#" class="logo">
+                        <span class="logo-icon">💠</span>
+                        <span class="logo-text">SaaS Hub</span>
+                    </a>
+                    <div class="footer-info">
+                        <p>123 Innovation Drive</p>
+                        <p>Tech City, TC 90210</p>
+                        <p>+1 (555) 123-4567</p>
+                        <p>contact@saashub.com</p>
+                    </div>
                 </div>
+                <div class="footer-col">
+                    <h4 class="footer-heading">Quick Links</h4>
+                    <div class="footer-links">
+                        <a href="#pricing">Pricing</a>
+                        <a href="#">Resources</a>
+                        <a href="#">About Us</a>
+                        <a href="#">FAQ</a>
+                        <a href="#">Contact</a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-heading">Social</h4>
+                    <div class="footer-links">
+                        <a href="#">Facebook</a>
+                        <a href="#">Instagram</a>
+                        <a href="#">LinkedIn</a>
+                        <a href="#">Twitter</a>
+                        <a href="#">Youtube</a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-heading">Legal</h4>
+                    <div class="footer-links">
+                        <a href="#">Terms of Service</a>
+                        <a href="#">Privacy Policy</a>
+                        <a href="#">Cookie Policy</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; 2026 SaaS Hub. All rights reserved.
+            </div>
             </div>
         </footer>
         
